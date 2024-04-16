@@ -26,12 +26,12 @@
 ;; data maps
 ;;
 (define-map tickets
-  { ticket-id: (string-ascii 36) }
-  { event-id: (string-ascii 36), owner: principal }
+  { ticket-id: (string-ascii 40) }
+  { event-id: (string-ascii 40), owner: principal }
 )
 
 (define-map events
-  { event-id: (string-ascii 36) }
+  { event-id: (string-ascii 40) }
   {
     owner: principal,
     pricePerTicket: uint,
@@ -42,29 +42,31 @@
 )
 
 (define-map tickets-by-event
-  { event-id: (string-ascii 36) }
-  { ticket-ids: (list 100 { ticket-id: (string-ascii 36), owner: principal }) })
+  { event-id: (string-ascii 40) }
+  { tickets: (list 100 { ticket-id: (string-ascii 40), owner: principal }) })
 
 (define-map tickets-by-owner
   { owner: principal }
-  { ticket-ids: (list 100 (string-ascii 36)) })
+  { tickets: (list 100 { event-id: (string-ascii 40), ticket-id: principal }) })
 
 ;; public functions
 ;;
-(define-public (add-event (event-id (string-ascii 36)) (owner principal) (price-per-ticket uint) (ticket-limit uint) (expiry uint))
+(define-public (add-event (event-id (string-ascii 40)) (price-per-ticket uint) (ticket-limit uint) (expiry uint))
   (let ((existing-event (map-get? events { event-id: event-id })))
     (match existing-event
       event (err ERR_ALREADY_REGISTER)
       (begin
         (map-set events
                  { event-id: event-id }
-                 { owner: owner, pricePerTicket: price-per-ticket, ticketLimit: ticket-limit, ticketsSold: u0, expiry: expiry })
+                 { owner: tx-sender, pricePerTicket: price-per-ticket, ticketLimit: ticket-limit, ticketsSold: u0, expiry: expiry })
         (ok true))))
 )
 
-(define-public (update-event (event-id (string-ascii 36)) (owner principal) (price-per-ticket uint) (ticket-limit uint) (expiry uint))
+(define-public (update-event (event-id (string-ascii 40)) (owner principal) (price-per-ticket uint) (ticket-limit uint) (expiry uint))
     (let ((event-details (unwrap! (map-get? events { event-id: event-id }) (err ERR_UNKNOWN_EVENT))))
         (begin
+            (asserts! ((or (is-eq tx-sender (get owner event-details) (is-eq tx-sender contract-owner))) (err ERR_UNAUTHORISED))
+            (asserts! (>= ticket-limit (get ticketsSold event-details)) (err ERR_MAX_VALUE))
             (map-set events
                     { event-id: event-id }
                     { owner: owner, pricePerTicket: price-per-ticket, ticketLimit: ticket-limit, ticketsSold: (get ticketsSold event-details), expiry: expiry })
@@ -72,7 +74,7 @@
 )
 
 
-(define-public (buy-ticket (event-id (string-ascii 36)) (ticket-id (string-ascii 36)))
+(define-public (buy-ticket (event-id (string-ascii 40)) (ticket-id (string-ascii 40)))
     (begin
         (asserts! (not (is-eq ticket-id "")) (err ERR_EMPTY_VALUE))
         (asserts! (not (is-eq event-id "")) (err ERR_EMPTY_VALUE))
@@ -86,6 +88,7 @@
                 (event-owner (get owner event-details))
                 (expiry (get expiry event-details)))
                 (asserts! (< tickets-sold ticket-limit) (err ERR_MAX_VALUE))
+                ;;(asserts! (< block-height expiry) (err ERR_EVENT_EXPIRED))
                 ;;(if (> price-per-ticket u0)
                   ;;  (begin
                     ;;    (stx-transfer? price-per-ticket tx-sender event-owner)))
@@ -99,11 +102,11 @@
                     ticketLimit: ticket-limit,
                     ticketsSold: (+ u1 tickets-sold),
                     expiry: expiry })
-                ;;(let ((owner-tickets (unwrap-panic (default-to (list) (get ticket-ids (map-get? tickets-by-owner { owner: tx-sender }))))))
-                ;;        (asserts! (< (len owner-tickets) (var-get max-tickets)) (err "Ticket limit per owner exceeded"))
-                ;;        (map-set tickets-by-owner
-                ;;            { owner: tx-sender }
-                ;;            { ticket-ids: (as-max-len? (append owner-tickets (list ticket-id)) (var-get max-tickets)) }))
+                (let ((owner-tickets (unwrap-panic (default-to (list) (get ticket-ids (map-get? tickets-by-owner { owner: tx-sender }))))))
+                        (asserts! (< (len owner-tickets) (var-get max-tickets)) (err "Ticket limit per owner exceeded"))
+                        (map-set tickets-by-owner
+                            { owner: tx-sender }
+                            { ticket-ids: (as-max-len? (append owner-tickets (list ticket-id)) (var-get max-tickets)) }))
                 (ok true)
             ))
         )
@@ -113,10 +116,10 @@
 
 ;; read only functions
 ;;
-(define-read-only (get-event (event-id (string-ascii 36)))
+(define-read-only (get-event (event-id (string-ascii 40)))
   (map-get? events { event-id: event-id }))
 
-(define-read-only (get-ticket (ticket-id (string-ascii 36)))
+(define-read-only (get-ticket (ticket-id (string-ascii 40)))
   (map-get? tickets { ticket-id: ticket-id }))
 
 (define-read-only (get-tickets-by-owner (owner principal))
