@@ -84,3 +84,9 @@ Before interacting with the contract, ensure you have a Stacks wallet setup and 
 - `ERR_UNAUTHORISED (403)`: Caller is not authorized to perform the requested operation.
 - `ERR_EVENT_EXPIRED (410)`: Attempt to operate on an expired event.
 - `ERR_ALREADY_REGISTER (409)`: Event with the given ID already exists.
+
+# Contributors
+This project is brought to you by the following developers, who have contributed their time and skills to bring "Evently" to life:
+
+- @darienmh
+- @Andresdev-gek
