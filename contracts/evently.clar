@@ -1,14 +1,22 @@
-
-;; title: evently
-;; version:
-;; summary:
+;;
+;; title: Evently Ticket Management Contract
+;; version: 1.0
+;; summary: This contract facilitates the creation, management, and purchasing of event tickets.
 ;; description:
+;;   'Evently' is a decentralized application on the Stacks blockchain that allows event organizers
+;;   to create events, set ticket prices and limits, and sell tickets directly to attendees without
+;;   the need for external ticketing agents. This contract handles event creation, ticket purchasing,
+;;   and queries for event and ticket details. It ensures that tickets are sold only up to the set limit,
+;;   manages ticket ownership, and provides utility functions to check tickets owned by a user.
+;;
 
 ;; traits
 ;;
+;; -- No traits are used in this contract --
 
 ;; token definitions
 ;;
+;; -- No fungible or non-fungible tokens are defined in this contract --
 
 ;; constants
 ;;
@@ -20,16 +28,15 @@
 (define-constant ERR_EMPTY_VALUE (err 410))
 (define-constant ERR_ALREADY_REGISTER (err 409))
 
-;; data vars
-;;
-
 ;; data maps
 ;;
+;; Mapping from ticket IDs to their corresponding event IDs and owners.
 (define-map tickets
   { ticket-id: (string-ascii 40) }
   { event-id: (string-ascii 40), owner: principal }
 )
 
+;; Events details including ownership, pricing, limits, sales count, and expiry.
 (define-map events
   { event-id: (string-ascii 40) }
   {
@@ -41,16 +48,19 @@
   }
 )
 
+;; Tickets by event stored to efficiently manage and retrieve tickets associated with specific events.
 (define-map tickets-by-event
   { event-id: (string-ascii 40) }
   { tickets: (list 100 { ticket-id: (string-ascii 40), owner: principal }) })
 
+;; Tickets owned by a particular owner for easy retrieval.
 (define-map tickets-by-owner
   { owner: principal }
   { tickets: (list 100 { event-id: (string-ascii 40), ticket-id: principal }) })
 
 ;; public functions
 ;;
+;; Creates a new event in the blockchain with specified attributes.
 (define-public (add-event (event-id (string-ascii 40)) (price-per-ticket uint) (ticket-limit uint) (expiry uint))
   (let ((existing-event (map-get? events { event-id: event-id })))
     (match existing-event
@@ -62,6 +72,7 @@
         (ok true))))
 )
 
+;; Allows the owner of an event or the contract owner to update the details of an existing event.
 (define-public (update-event (event-id (string-ascii 40)) (owner principal) (price-per-ticket uint) (ticket-limit uint) (expiry uint))
     (let ((event-details (unwrap! (map-get? events { event-id: event-id }) (err ERR_UNKNOWN_EVENT))))
         (begin
@@ -73,7 +84,7 @@
             (ok true)))
 )
 
-
+;; Enables users to purchase tickets for an event if tickets are available.
 (define-public (buy-ticket (event-id (string-ascii 40)) (ticket-id (string-ascii 40)))
     (begin
         (asserts! (not (is-eq ticket-id "")) (err ERR_EMPTY_VALUE))
@@ -116,21 +127,18 @@
 
 ;; read only functions
 ;;
+;; Retrieves details of a specific event by its ID.
 (define-read-only (get-event (event-id (string-ascii 40)))
   (map-get? events { event-id: event-id }))
 
+;; Fetches details of a specific ticket using its ID.
 (define-read-only (get-ticket (ticket-id (string-ascii 40)))
   (map-get? tickets { ticket-id: ticket-id }))
 
+;; Lists all tickets owned by a specific user.
 (define-read-only (get-tickets-by-owner (owner principal))
     (let ((tickets-owner (map-get? tickets-by-owner { owner: owner })))
         (match tickets-owner
             ticket-data (ok (get ticket-ids ticket-data))
             (ok (list))
         )))
-
-;; private functions
-;;
-
-;; (contract-call? .evently add-event "event123" 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM u250 u100 u20250101)
-;; (contract-call? .evently buy-ticket "event123" "ticket123")
