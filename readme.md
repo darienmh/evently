@@ -1,4 +1,4 @@
-# Introduction
+# Welcome to Evently
 "Evently" is a decentralized application on the Stacks blockchain designed to empower event organizers to manage and sell event tickets directly, without the need for external ticketing agents. This contract facilitates the creation, updating, and purchasing of event tickets, while also providing mechanisms to query ticket and event details efficiently.
 
 # Features
