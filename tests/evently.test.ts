@@ -1,14 +1,11 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 
-// Assuming you have some way to simulate or mock blockchain interaction
-// If using Clarinet in a JavaScript/TypeScript environment, adjust according to actual SDK
 let simnet: any;
 let accounts: Map<string, any>;
 let address1: string;
 
 beforeAll(() => {
-  // Initialize your simulated network and accounts
-  simnet = initializeSimnet(); // Replace with actual initialization logic
+  simnet = initializeSimnet();
   accounts = simnet.getAccounts();
   address1 = accounts.get("wallet_1")!;
 });
@@ -56,19 +53,14 @@ describe("Evently Contract - add-event Function Tests", () => {
     );
     expect(result).toBe('err ERR_EMPTY_VALUE');
   });
-
-  // Additional tests can be added here for other boundary cases and different inputs
 });
 
-// Helper function to initialize the simulated network (mock or pseudo-code)
 function initializeSimnet() {
   return {
     getAccounts: () => new Map([
-      ["wallet_1", "ST1...YourAddress"]
+      ["wallet_1", "ST1TPC1ER8W9TB0XGYY8P6MNFKT1M2MP2A0QN5VBY"]
     ]),
     executeTransaction: (contract, functionName, args, sender) => {
-      // Simulated transaction execution logic
-      // This should ideally be connected to your Clarinet testing or actual Stacks node in testing mode
       return { result: 'ok true', receipts: [{ result: 'ok true' }] };
     },
     blockHeight: 10000
